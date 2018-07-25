@@ -1,0 +1,41 @@
+{{template "header.html" }}
+
+<h1>Some Rules</h2>
+<p>
+   Imagine a world where everybody is a reasonable actor and nobody is a dick. In this world creating a service is an engineering 
+experience in which we focus on the tech and enabling cool scenarios and not a security exercise dictated by the lowest common 
+denominator among the user base. Fun world, no? Too bad. We don't live in that world. And therefore, I present these rules which you 
+must agree to in order to use this service:
+</p>
+<p>
+    All rules fall into one of two themes:<br/>
+    <ol>
+        <li>Don't be an ass</li>
+        <li>Don't be a moron</li>
+    </ol>
+</p>
+<p>
+    <strong>1. Don't be an ass</strong>
+    <ol>
+        <li>Do not spend your time discovering all the ways to DOS attack this service.
+            There are many, you won't be the first to discover anything, and ultimately you get nothing of value.</li>
+        <li>Don't upload data to other people's toilets. This is just annoying. And it forces people to enable auth which might not be alinged with what they are testing.</li>
+        <li>Don't upload illegal content. This is a debug service, not your own personal Warez repo.</li>
+        <li>Don't flood this with uploads. If a toilet contains too many dumps the new posts will result in old ones being deleted. Turns out storage isn't free.</li>
+        <li>Don't flood this with uploads. If a toilet receives too many dumps per minute it will get clogged and fail.</li>
+    </ol>
+</p>
+<p>
+    <strong>2. Don't be a moron</strong>
+    <ol>
+        <li>Don't upload private data. You shouldn't be testing this with real user information.</li>
+        <li>Don't deploy a production system that points to this service. This happens and it leads to violations of rule #1.</li>
+        <li>Don't rely on data in this system. Drives get full, boxes go down, and files get deleted. This is an ephemeral system.</li>
+        <li>Don't push your code to Github with ptsv2 hardcoded in your unit tests. That becomes a DDOS situation if your project becomes popular.</li>
+    </ol>
+</p>
+<p>
+    Violations of these rules lead to IPs being blocked and features being removed. This sucks for everybody.
+</p>
+
+{{template "footer.html" }}

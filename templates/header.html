@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PTS - V2</title>
+
+    <link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="/static/style.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="container">
+        <!-- Draw the header -->
+        <div class="row" style="background-color:darkgrey">
+            <div class="col-md-12">
+                <h1>{{ if hasField . "Title" }}{{.Title}}{{ else }}Post Test Server V2{{end}}</h1>
+            </div>
+        </div>
+
+        <!-- split everything under the header in two columns -->
+        <div class="row">
+            <!-- sidebar gets one column -->
+            <div class="col-md-2">
+                {{template "sidebar.html"}}
+            </div>
+
+            <div class="col-md-10">
+              <div class="row">
+                <div class="col-md-12">

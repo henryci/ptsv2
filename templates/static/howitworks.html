@@ -1,0 +1,66 @@
+{{template "header.html" }}
+
+<h1>How it works</h2>
+    <strong>1) Create your toilet</strong>
+    <p class="indented">
+        On <a href="/">the homepage</a> is a search box. This lets you search for a toilet. A toilet is the vessel for receiving and exploring your dumps.
+        Search for a string that you can remember and is unique to you and you will either be dropped off at an empty toilet, or somebody else's toilet
+        who came up with your unique string first. Once you have your toilet, you can show the configuration options (described below), see the URL to 
+        submit dumps to, and explore any dumps you already have.
+    </p>
+    <strong>2) Submit your dumps to the URL</strong>
+    <p class="indented">
+        The toilet page will show you your submit URL. (the toilet URL with /post appended). Point your client at this and submit away. You can also
+        just go to this URL in a browser to test configuration or see for yourself that it works and it's your client that is broken. :)
+    </p>
+    <strong>3) Review your dumps</strong>
+    <p class="indented">
+        The Toilet page will show dumps as they come in (after you reload it). You can click into any dump to see the values, the content of files, etc. You
+        can also view your dumps as JSON or text blobs (useful for programatic access)
+    </p>
+
+<h1>Configuration Options</h1>
+<p>
+    On the toilet page there is an option to show configuration. This lets you update the following values:
+</p>
+    <strong>HTTP Auth</strong>
+<p class="indented">
+    This sets up basic HTTP auth so incoming posts must properly validate to be saved. This is helpful for testing that your client is handling Auth
+    properly. These values are both stored and transmitted in plain text. So don't use sensitive strings here.
+</p>
+
+
+    <strong>Status Code</strong>
+<p class="indented">    
+    This is the HTTP status code the server responds to the request with. 200 is the default, 202 is another common value. You can use this to testing
+    situations like receiving a 500, or a 404.
+</p>
+<strong>Body</strong>
+<p class="indented">
+    This is the body of the response. You can test different responses. Paste a JSON string if that's what your client should expect from the server. 
+    Try pasting different possible error messages. There are also 3 hardcoded strings which cause special behavior. To use these, replace the body with 
+    any of these strings (with no whitespace):
+    <ol>
+        <li>{{ "{{LINK}}" }} - Returns an HTML link for the dump.</li>
+        <li>{{  "{{URL-TEXT}}" }} - Returns an HTTP URL to the text version of this dump.</li>
+        <li>{{  "{{URL-JSON}}" }} - Returns an HTTP URL to the JSON version of this dump.</li>
+    </ol>
+</p>
+<strong>Delay*</strong>
+<p class="indented">
+    This causes the server to sleep the specified seconds before returning a result. Useful for testing some timeout and race condition stuff. Unfortunately 
+    I can't sleep indefinitely because threads create cost so the max value for delay is 5.<br/>
+    *This is currently broken because AppEngine understandably doesn't like to wait around being useless. Will fix!
+</p>
+
+<h1>Limits</h1>
+Because of cost or because people are mean I have to impose the following limits. This service is brand new and you should expect these to change.
+<ul>
+    <li>The Body can't be larger than 1,500 bytes. That limit comes from Google's Datastore. If enough people complain I'll figure something else out.</li>
+    <li>Files cannot be downloaded anymore. People were using this service as a file transfer tool.</li>
+    <li>Files are limited to 16K. This is for cost reasons and to curb using me for piracy.</li>    
+    <li>Toilets can have at most 240 dumps (10 per hour). After that old dumps get deleted (in batches of 50) as new ones come in.</li>
+    <li>Depending on costs I'm likely to start deleting old dumps, and unused toilets.</li>
+</ul>    
+
+{{template "footer.html" }}

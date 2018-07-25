@@ -1,0 +1,38 @@
+{{template "header.html" }}
+
+<h1>What is this?</h1>
+<p>
+This is a service that you can point your HTTP clients' POSTS and GETS to which receives 
+and dumps them so you know what is being transmitted. Basically, it's a shittier <a href="https://requestb.in/">Request Bin</a> 
+that justifies its existence by providing a few specific use cases (like making dumps available as JSON blobs).
+</p>
+<p>
+    <strong>Some ways this has been used in the past include:</strong>
+    <ul>
+        <li>Building and testing SDKs for mobile apps</li>
+        <li>Developing HTTP clients on embedded devices</li>
+        <li>Intro to web programming classes</li>
+        <li>Low effort data logging solution</li>
+        <li>Victim of misguided DDOS attacks</li>
+    </ul>
+</p>
+
+<h1>Why is this?</h1>
+<p>
+This project began in 2009 when I wrote the first mobile SDK for Localytics. I needed a way to see what the device was uploading, test 
+different server responses, and easily share weird cases with Andrew so he could point out what I did wrong. I solved this need with a 
+30 line PHP script that dumped the post in a directory on Dreamhost. Later, I made this public and Post Test Server was born. In the 9 
+years since I published it I got a lot of direct and indirect feedback:
+  <ul>
+      <li>Engineers would use this to their automated test cases, even though output was awful to parse</li>
+      <li>People got mad when this free service would go down</li>
+      <li>At least one person per week accidentally uploads something sensitive and needs a delete</li>      
+      <li>I became the default URL for many spam bots, at times amounting to > 10,000 requests a second.</li>
+      <li>Enough real people use this that around noon Eastern time every day there are too many files for Apache</li>
+      <li>1 month retention, became 2 weeks retention, became 1 week retention.</li>
+  </ul>
+And so, after many years of telling myself I really need to update this thing, I've finally done so. The project is now written in Go, lives
+on Google's Cloud, and is significantly more useable.
+</p>
+
+{{template "footer.html" }}

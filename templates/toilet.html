@@ -1,0 +1,102 @@
+{{template "header.html" . }}
+
+<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+    
+        <strong>ID:</strong> {{.Toilet.ID}}<br/>
+        <strong>Created:</strong> {{.Toilet.Created.Format "2006-01-02 15:04:05 UTC"}}<br/>
+        <strong>Post URL:</strong> <a href="/t/{{.Toilet.ID}}/post">/t/{{.Toilet.ID}}/post</a><br/>
+        <strong>Config</strong> <a href="#" id="ToggleConfig">show</a>
+
+        <p>                       
+            <div id="ConfigDetails" style="display:none;margin-left:10px">
+                <span style="color:red">All values are transmitted and stored in plaintext!<br/>Do not submit anything you wouldn't want emailed to your worst enemy.</span>
+                <form method="POST" action="/t/{{.Toilet.ID}}/edit" id="toilet_edit_form">
+                <table class="table table-borderless">
+                    <tr>
+                        <td>HTTP Auth</td>
+                        <td>
+                            <table>
+                                <tr>
+                                    <td>Http Username:</td>
+                                    <td><input type="text" name="AuthUsername" value="{{.Toilet.AuthUsername}}"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Http Password:</td>
+                                    <td><input type="text" name="AuthPassword" value="{{.Toilet.AuthPassword}}"/></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Server Response</td>
+                        <td> 
+                            <table>
+                                <tr>
+                                    <td>Status Code:</td>
+                                    <td><input type="text" name="ResponseCode" size="3" value="{{.Toilet.ResponseCode}}"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Body:</td>
+                                    <td><textarea name="ResponseBody" rows="10" cols="50" form="toilet_edit_form">{{.Toilet.ResponseBody}}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <td>Delay:</td>
+                                    <td><input type="text" name="ResponseDelay" size="1" value="{{.Toilet.ResponseDelay}}"></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>     
+                <input type="submit" value="Update Toilet Config">       
+                </form>
+            </div>
+        </p>
+
+
+        <p>
+            <h3>Dumps</h3>
+            {{ if .Dumps }}            
+            <table class="table table-condensed table-borderless table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Timestamp</th>
+                        <th>Method</th>
+                        <th>Headers</th>
+                        <th>Params</th>
+                        <th>Body Length</th>
+                        <th>Files</th>
+                    </tr>
+                    </thead>
+                    
+                <tbody>
+                    {{ range .Dumps }}
+                        <tr>
+                            <td>{{.ID }}</td>
+                            <td>{{.Timestamp.Format "2006-01-02 15:04:05 MST"}}</td>                                        
+                            <td>{{.Method}}</td>
+                            <td>{{len .Headers}}</td>
+                            <td>{{len .FormValues}}</td>
+                            <td>{{len .Body}}</td>
+                            <td>{{len .Files}}</td>
+                            <td><a href="/t/{{ $.Toilet.ID }}/d/{{ .ID }}">view</a> | <a href="/t/{{ $.Toilet.ID}}/d/{{ .ID }}/flush">flush</a></td>                            
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+            {{ else }}
+                There are no dumps in this toilet.
+            {{ end }}
+        </p>
+
+<script type="text/javascript">
+$( "#ToggleConfig" ).click(function() {
+  $("#ToggleConfig").text( $("#ToggleConfig").text() == "show" ? "hide" : "show" );
+  $( "#ConfigDetails" ).toggle();
+});
+</script>
+
+{{template "footer.html" }}

@@ -1,0 +1,58 @@
+{{template "header.html" }}
+    <h1>Welcome to Henry's Post Test Server V2!</h2>    
+    This is a service for developers testing clients that POST and GET things over HTTP.    
+    <p>
+        To begin, use the search below to find an unclaimed toilet. (Toilets are where your dumps go)        
+    </p>
+    <p>
+    <form>
+        <input type="text" id="toiletName"/ size="40">
+        <input type="submit" id="findToilet" value="Look up*" /><br/>
+        <input type="button" id="randomToilet" value="New Random Toilet" />
+    </form>
+    </p>
+    <p>
+      *All this form does is redirect you to /t/[search string]
+    </p>
+    <p>
+       <h2>This service is super beta.</h2>
+       Expect bugs. Get my email from the contact page and tell me about my bugs.</h2>
+    </p>
+    <p>
+      <h2>First update: Anti-Spam</h2>
+      Because of people <a href="https://imgur.com/a/Ac1KJYC">like this</a> I have had to add logic to disable toilets that receive too many requests per minute.<br/>
+      Feel free to reach out to me if you feel your toilet has been blocked in error because bugs are a thing.
+    </p>
+
+<script type="text/javascript">
+  function hasWhiteSpace(s) {
+    return /\s/g.test(s);
+  }
+
+  document.getElementById("findToilet").onclick = function() {
+    toilet = document.getElementById("toiletName").value;
+    if(hasWhiteSpace(toilet)) {
+        alert("Toilet mustn't have whitespace in the name")
+        return false;
+    }
+      
+    if(!toilet || toilet.len < 1) {
+      alert("Please specify a toilet to search for");
+      return false;
+    }
+
+    location.href = "/t/" + toilet;
+    return false;    
+  }
+
+  document.getElementById("randomToilet").onclick = function() {
+    // Construct a random Toilet by taking some random alphanumerics and appending the current time
+    var randStr = Array(5+1).join((Math.random().toString(36)+'00000000000000000').slice(2, 18)).slice(0, 5);
+    var timestr = Math.round((new Date()).getTime() / 1000);
+    var final = randStr + "-" + timestr
+
+    location.href = "/t/" + final;
+  }
+</script>
+
+{{template "footer.html" }}

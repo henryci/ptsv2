@@ -1,0 +1,105 @@
+{{template "header.html" . }}
+
+<script
+src="https://code.jquery.com/jquery-3.2.1.min.js"
+integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+crossorigin="anonymous"></script>
+
+            <h2>Dump {{.Dump.ID}}</h2>
+            <a href="/t/{{.ToiletID}}">Parent Toilet</a><br/>
+            View this as: <a href="/t/{{.ToiletID}}/d/{{.Dump.ID}}/json">json</a> or <a href="/t/{{.ToiletID}}/d/{{.Dump.ID}}/text">raw text</a><br/>
+
+            <h3>Details</h3>
+            <strong>Posted:</strong> {{.Dump.Timestamp.Format "2006-01-02 15:04:05 MST"}}</br>
+            <strong>Method:</strong> {{.Dump.Method}}<br/>
+            <strong>Source:</strong> {{.Dump.RemoteAddr}}<br/>
+
+            <h3>Headers</h3>
+            <table class="table table-super-condensed table-borderless table-hover">
+                <thead>
+                    <tr>
+                        <th>Header</th>
+                        <th>Values</th>
+                    </tr>
+                </thead>    
+                <tbody>
+                {{ range $key, $value := .Dump.Headers }}
+                    <tr>
+                        <td>{{ $key }}</td>
+                        <td>{{ range $i, $e := $value }} 
+                                {{ if gt $i 0 }},<br/>{{ end }} 
+                                {{ $e }} 
+                            {{ end }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+
+            <h3>Post Parameters</h3>
+            {{ if .Dump.FormValues }}
+            <table class="table table-super-condensed table-borderless table-hover">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{ range $key, $value := .Dump.FormValues }}
+                    <tr>
+                        <td>{{ $key }}</td>
+                        <td>{{ range $i, $e := $value }} 
+                                {{ if gt $i 0 }},<br/>{{ end }} 
+                                {{ $e }} 
+                            {{ end }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>    
+            {{ else }}
+              No Parameters.
+            {{ end }}
+
+            <h3>Post Body</h3>
+            {{ if .Dump.Body }}
+                <code>
+                {{ .Dump.Body }}
+                </code>
+            {{ else }}
+                No Body.
+            {{ end }}
+
+            <h3>Multipart Files</h3>
+            {{ if .Dump.Files }}
+                <table class="table table-super-condensed table-borderless">
+                    <thead>
+                        <th>Filename</th>
+                        <th>SHA1</th>
+                        <th>Contents</th>
+                    </thead>
+                {{ range .Dump.Files }}                    
+                        <tr>
+                            <td>{{ .Filename }}</td>
+                            <td>{{ .SHA1 }} </td>
+                            <td><a href="#" class="showFileString">String</a> | <a href="#" class="showFileBytes">Bytes</a></td>
+                        </tr>
+                        <tr style="display:none"><td colspan="3"> {{ printf "%s" .Content }}</td></tr>
+                        <tr style="display:none"><td colspan="3"> {{ .Content }}</td></tr>
+                        <tr><td>&nbsp;</td></tr>
+                {{ end }}
+                </table>
+            {{ else }}
+                No Files
+            {{ end }}
+
+<script type="text/javascript">
+  $(".showFileString").click(function() {
+    $(this).closest("tr").next().toggle();
+  });
+
+  $(".showFileBytes").click(function() {
+    $(this).closest("tr").next().next().toggle();
+  });
+</script>
+
+{{template "footer.html" }} 

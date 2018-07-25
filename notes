@@ -1,0 +1,12 @@
+Starting the app:
+From the project directory:
+Administrators-MacBook-Pro:ptsv2 henry$ ~/go_appengine/goapp serve .
+
+File upload:
+curl -F 'data=@/Users/henry/working/go/ptsv2/testfile.txt' localhost:8080/t/abcqq/post
+
+Delaying:
+https://cloud.google.com/appengine/docs/standard/go/taskqueue/delay
+
+Deploying:
+gcloud app deploy

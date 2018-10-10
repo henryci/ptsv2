@@ -85,6 +85,11 @@
                             <td><a href="/t/{{ $.Toilet.ID }}/d/{{ .ID }}">view</a> | <a href="/t/{{ $.Toilet.ID}}/d/{{ .ID }}/flush">flush</a></td>                            
                         </tr>
                     {{ end }}
+                    <tr> 
+                        <td colspan="3">
+                            <a href="/t/{{ $.Toilet.ID }}/flush_all" onclick="return confirm('Are your sure? This will flush all dumps in your toilet.')">flush all dumps</a>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             {{ else }}

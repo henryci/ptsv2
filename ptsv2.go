@@ -34,6 +34,7 @@ func init() {
 	router.HandleFunc("/", rootHandler)
 	router.HandleFunc("/s/{page}", staticHandler)
 	router.HandleFunc("/t/{toiletID}", toiletHandler)
+	router.HandleFunc("/t/{toiletID}/flush_all", toiletFlushAllHandler)
 	router.HandleFunc("/t/{toiletID}/edit", toiletEditHandler)
 	router.HandleFunc("/t/{toiletID}/post", postdumpHandler)
 	router.HandleFunc("/t/{toiletID}/d/{dumpID}", viewdumpHandlerDEFAULT)
@@ -124,6 +125,20 @@ func toiletHandler(w http.ResponseWriter, r *http.Request) {
 
 	// The toilet was found, display it
 	templates.ExecuteTemplate(w, "toilet.html", values)
+}
+
+// Flushes all dumps in a toilet
+func toiletFlushAllHandler(w http.ResponseWriter, r *http.Request) {
+	urlVars := mux.Vars(r)
+	toiletID := urlVars["toiletID"]
+	context := appengine.NewContext(r)
+
+	if err := flushAllDumps(context, toiletID); err != nil {
+		errorHandler(w, r, http.StatusBadRequest, "Could not flush dumps for toilet: '"+toiletID+"'", nil)
+		return
+	}
+
+	http.Redirect(w, r, "/t/"+toiletID, http.StatusSeeOther)
 }
 
 // Edits a toilet

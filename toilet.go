@@ -53,6 +53,26 @@ func getToiletDumps(context context.Context, toiletID string) ([]Dump, error) {
 	return dumps, nil
 }
 
+// Deletes all dumps for a given toilet
+func flushAllDumps(context context.Context, toiletID string) error {
+	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
+	toDelete := datastore.NewQuery("Dump").Ancestor(toiletKey).KeysOnly()
+
+	keys, err := toDelete.GetAll(context, nil)
+	if err != nil {
+		logError(context, "FlushAllDumps: Error retrieving keys to delete.", err)
+		return err
+	}
+
+	err = datastore.DeleteMulti(context, keys)
+	if err != nil {
+		logError(context, "FlushAllDumps: Unable to delete items", err)
+		return err
+	}
+
+	return nil
+}
+
 // Gets all Disabled Toilets
 func getDisabledToilets(context context.Context) ([]Toilet, error) {
 	var toilets []Toilet

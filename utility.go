@@ -72,8 +72,3 @@ func checkAuth(w http.ResponseWriter, r *http.Request, username string, password
 
 	return pair[0] == username && pair[1] == password
 }
-
-// Checks a request to see if it is a multipart form (file upload)
-func isMultipart(r *http.Request) bool {
-	return strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data")
-}

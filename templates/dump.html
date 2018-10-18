@@ -8,6 +8,7 @@ crossorigin="anonymous"></script>
             <h2>Dump {{.Dump.ID}}</h2>
             <a href="/t/{{.ToiletID}}">Parent Toilet</a><br/>
             View this as: <a href="/t/{{.ToiletID}}/d/{{.Dump.ID}}/json">json</a> or <a href="/t/{{.ToiletID}}/d/{{.Dump.ID}}/text">raw text</a><br/>
+            See <a href="/s/dumpfields.html">what's in a dump</a> for info on how these fields are populated.<br/>
 
             <h3>Details</h3>
             <strong>Posted:</strong> {{.Dump.Timestamp.Format "2006-01-02 15:04:05 MST"}}</br>
@@ -21,13 +22,13 @@ crossorigin="anonymous"></script>
                         <th>Header</th>
                         <th>Values</th>
                     </tr>
-                </thead>    
+                </thead>
                 <tbody>
                 {{ range $key, $value := .Dump.Headers }}
                     <tr>
                         <td>{{ $key }}</td>
-                        <td>{{ range $i, $e := $value }} 
-                                {{ if gt $i 0 }},<br/>{{ end }} 
+                        <td>{{ range $i, $e := $value }}
+                                {{ if gt $i 0 }},<br/>{{ end }}
                                 {{ $e }} 
                             {{ end }}</td>
                     </tr>
@@ -73,12 +74,14 @@ crossorigin="anonymous"></script>
             {{ if .Dump.Files }}
                 <table class="table table-super-condensed table-borderless">
                     <thead>
+                        <th>Name</th>
                         <th>Filename</th>
                         <th>SHA1</th>
                         <th>Contents</th>
                     </thead>
-                {{ range .Dump.Files }}                    
+                {{ range .Dump.Files }}
                         <tr>
+                            <td>{{ .ValueName }}</td>
                             <td>{{ .Filename }}</td>
                             <td>{{ .SHA1 }} </td>
                             <td><a href="#" class="showFileString">String</a> | <a href="#" class="showFileBytes">Bytes</a></td>
@@ -90,6 +93,25 @@ crossorigin="anonymous"></script>
                 </table>
             {{ else }}
                 No Files
+            {{ end }}
+
+            <h3>Multipart Values</h3>
+            {{ if .Dump.MultipartValues }}
+                <table class="table table-super-condensed table-borderless">
+                    <thead>
+                        <th>Name</th>
+                        <th>Value</th>
+                    </thead>
+                {{ range .Dump.MultipartValues }}
+                        <tr>
+                            <td>{{ .ValueName }}</td>
+                            <td>{{ printf "%s" .Content }} </td>
+                        </tr>
+                        <tr><td>&nbsp;</td></tr>
+                {{ end }}
+                </table>
+            {{ else }}
+                No Multipart Values
             {{ end }}
 
 <script type="text/javascript">

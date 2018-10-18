@@ -1,0 +1,18 @@
+{{template "header.html" }}
+
+<h1>What's in a dump</h1>
+Below is a description of the rules by which things are captured. These decisions are the results of feedback from viewers like you. So 
+if something doesn't make sense to you, doesn't work as it says it should, or is outright absurd, let me know.
+<h2>Headers</h2>
+The header is just a dump of the headers in the request with the one note that 
+headers inserted by the host (Google Appengine) have been removed to avoid confusing people
+<h2>Post Parameters</h2>
+Parses the traditional web form request data if it's there. This should always be blank if the request type is not: 
+applicatin/x-www-form-urlencoded data. This is also where GET query parameters (?foo=bar in the URL) will appear.
+<h2>Post Body</h2>
+The post body as a string.
+<h2>Multipart Files</h2>
+If the post is of content type multipart/* then this is where any files will go. For a file to be valid it must have a filename.
+Note that the content will display encoded when viewing a dump as JSON.
+<h2>Multipart Values</h2>
+The non-file values submitted as part of a multipart request. Note that the content will display encoded when viewing as JSON.

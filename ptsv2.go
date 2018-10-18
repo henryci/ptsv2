@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -27,6 +28,7 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{"hasField"
 	"templates/static/whatisthis.html",
 	"templates/static/somerules.html",
 	"templates/static/howitworks.html",
+	"templates/static/dumpfields.html",
 	"templates/static/contact.html"))
 
 func init() {
@@ -271,30 +273,48 @@ func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	dump.FormValues = r.Form
 
-	// Is there a file being uploaded?
-	if isMultipart(r) {
-		if err = r.ParseMultipartForm((1 << 10) * 24); nil != err {
-			errorHandler(w, r, http.StatusInternalServerError, "Failed writing file", err)
+	// Is this a multi-part submission?
+	if strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "multipart/") {
+		_, mediaParams, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if err != nil {
+			errorHandler(w, r, http.StatusBadRequest, "Unable to parse media type", err)
 			return
 		}
-		for _, fheaders := range r.MultipartForm.File {
-			for _, hdr := range fheaders {
 
-				var infile multipart.File
-				if infile, err = hdr.Open(); nil != err {
-					errorHandler(w, r, http.StatusInternalServerError, "Failed opening upload file", err)
-					return
-				}
+		mr := multipart.NewReader(r.Body, mediaParams["boundary"])
+		for {
+			p, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				errorHandler(w, r, http.StatusBadRequest, "Error parsing multipart data", err)
+				return
+			}
 
-				// TODO: MAKE A CONFIG SECTION
-				buf := make([]byte, MaxFileSize) // 16K seems like a reasonable file limit
-				_, err := infile.Read(buf)
-				if err != nil && err != io.EOF {
-					errorHandler(w, r, http.StatusInternalServerError, "Failed reading upload file", err)
-					return
-				}
-				buf = bytes.Trim(buf, "\x00")
-				dump.addFile(hdr.Filename, buf)
+			// Parse the content disposition of this item
+			_, valueparams, err := mime.ParseMediaType(p.Header.Get("Content-Disposition"))
+			if err != nil {
+				errorHandler(w, r, http.StatusBadRequest, "Error parsing Content Disposition", err)
+				return
+			}
+
+			valueName := valueparams["name"]
+
+			// Read the content of this item
+			buf := make([]byte, MaxFileSize)
+			_, err = p.Read(buf)
+			if err != nil && err != io.EOF {
+				errorHandler(w, r, http.StatusInternalServerError, "Failed reading upload file", err)
+				return
+			}
+			buf = bytes.Trim(buf, "\x00")
+
+			// If there is a filename, save the file
+			if len(p.FileName()) > 0 {
+				dump.addFile(p.FileName(), valueName, buf)
+			} else {
+				dump.addMultipartValue(valueName, buf)
 			}
 		}
 	}
@@ -465,6 +485,7 @@ func outputDumpText(w http.ResponseWriter, r *http.Request, dump Dump) {
 	fmt.Fprintln(w, "-----")
 	if len(dump.Files) > 0 {
 		for i := 0; i < len(dump.Files); i++ {
+			fmt.Fprintln(w, fmt.Sprintf("Name: %s", dump.Files[i].ValueName))
 			fmt.Fprintln(w, fmt.Sprintf("File: %d", i))
 			fmt.Fprintln(w, fmt.Sprintf("filename: %s", dump.Files[i].Filename))
 			fmt.Fprintln(w, fmt.Sprintf("SHA1: %s", dump.Files[i].SHA1))
@@ -473,6 +494,20 @@ func outputDumpText(w http.ResponseWriter, r *http.Request, dump Dump) {
 	} else {
 		fmt.Fprintln(w, "No files")
 	}
+	fmt.Fprintln(w, "")
+
+	fmt.Fprintln(w, "Multipart Values")
+	fmt.Fprintln(w, "----------------")
+	if len(dump.MultipartValues) > 0 {
+		for i := 0; i < len(dump.MultipartValues); i++ {
+			fmt.Fprintln(w, fmt.Sprintf("Name: %s", dump.MultipartValues[i].ValueName))
+			fmt.Fprintln(w, fmt.Sprintf("Value: %s", dump.MultipartValues[i].Content))
+		}
+
+	} else {
+		fmt.Fprintln(w, "No Multipart Values")
+	}
+
 }
 
 func outputDumpJSON(w http.ResponseWriter, r *http.Request, dump Dump) {

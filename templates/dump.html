@@ -105,7 +105,7 @@ crossorigin="anonymous"></script>
                 {{ range .Dump.MultipartValues }}
                         <tr>
                             <td>{{ .ValueName }}</td>
-                            <td>{{ printf "%s" .Content }} </td>
+                            <td><code>{{ printf "%s" .Content }}</code></td>
                         </tr>
                         <tr><td>&nbsp;</td></tr>
                 {{ end }}

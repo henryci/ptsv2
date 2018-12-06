@@ -404,12 +404,22 @@ func viewdumpHandler(w http.ResponseWriter, r *http.Request, outputMethod string
 	urlVars := mux.Vars(r)
 	toiletID := urlVars["toiletID"]
 	context := appengine.NewContext(r)
+	var dumpID int64 // Dump IDs are int64s
+	var err error
 
-	// Dump IDs are int64s
-	dumpID, err := strconv.ParseInt(urlVars["dumpID"], 10, 64)
-	if err != nil {
-		errorHandler(w, r, http.StatusBadRequest, "Invalid Dump ID.", err)
-		return
+	// "latest" is a unique Dump ID that always gets the latest dump (Feature request from Jeff Rak)
+	if urlVars["dumpID"] == "latest" {
+		dumpID, err = getLatestDumpFromToilet(context, toiletID)
+		if err != nil {
+			errorHandler(w, r, http.StatusBadRequest, "Could not get latest dump", err)
+			return
+		}
+	} else { // Otherwise get the dump ID from the URL
+		dumpID, err = strconv.ParseInt(urlVars["dumpID"], 10, 64)
+		if err != nil {
+			errorHandler(w, r, http.StatusBadRequest, "Invalid Dump ID.", err)
+			return
+		}
 	}
 
 	dump, err := getDump(context, dumpID, toiletID)

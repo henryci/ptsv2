@@ -53,6 +53,23 @@ func getToiletDumps(context context.Context, toiletID string) ([]Dump, error) {
 	return dumps, nil
 }
 
+// Gets the ID of the latest dump in a toilet
+func getLatestDumpFromToilet(context context.Context, toiletID string) (int64, error) {
+	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
+	q := datastore.NewQuery("Dump").Ancestor(toiletKey).Order("-Timestamp").KeysOnly().Limit(1)
+
+	keys, err := q.GetAll(context, nil)
+	if err != nil {
+		logError(context, "Failed getting latest dump.", err)
+		return -1, err
+	}
+	if len(keys) < 1 {
+		return -1, errors.New("this pristine toilet has no dumps")
+	}
+
+	return keys[0].IntID(), nil
+}
+
 // Deletes all dumps for a given toilet
 func flushAllDumps(context context.Context, toiletID string) error {
 	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)

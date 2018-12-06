@@ -521,6 +521,7 @@ func outputDumpText(w http.ResponseWriter, r *http.Request, dump Dump) {
 }
 
 func outputDumpJSON(w http.ResponseWriter, r *http.Request, dump Dump) {
+	w.Header().Set("Content-Type", "application/json")
 	jsonString, err := json.Marshal(dump)
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Couldn't convert Dump to JSON.", err)

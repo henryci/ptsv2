@@ -52,6 +52,11 @@
     I can't sleep indefinitely because threads create cost so the max value for delay is 5.<br/>
     *This is currently broken because AppEngine understandably doesn't like to wait around being useless. Will fix!
 </p>
+<strong>Dump Body First</strong>
+<p class="indented">
+    This causes the server to get the contents of the post body before parsing the form. Because this is a stream, it means any post
+    parameters stored in the post body will not appear as normal parameters. This probably also breaks multipart parsing as well.
+</p>
 
 <h1>Limits</h1>
 Because of cost or because people are mean I have to impose the following limits. This service is brand new and you should expect these to change.

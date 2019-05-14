@@ -1,6 +1,8 @@
+Using my own repo as sticky notes:
+
 Starting the app:
-From the project directory:
-Administrators-MacBook-Pro:ptsv2 henry$ ~/go_appengine/goapp serve .
+1) export GOPATH="$GOPATH:/path/to/go/dir"
+2) dev_appserver.py .
 
 File upload:
 curl -F 'data=@/Users/henry/working/go/ptsv2/testfile.txt' localhost:8080/t/abcqq/post

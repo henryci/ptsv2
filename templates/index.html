@@ -14,15 +14,25 @@
     <p>
       *All this form does is redirect you to /t/[search string]
     </p>
+
     <p>
-       <h2>This service is super beta.</h2>
-       Expect bugs. Get my email from the contact page and tell me about my bugs.</h2>
-    </p>
-    <p>
-      <h2>First update: Anti-Spam</h2>
-      Because of people <a href="https://imgur.com/a/Ac1KJYC">like this</a> I have had to add logic to disable toilets that receive too many requests per minute.<br/>
-      Feel free to reach out to me if you feel your toilet has been blocked in error because bugs are a thing.
-    </p>
+        <h3>POST + GET together</h3>
+        [5/14/2019] A user pointed out that the behavior was inconsistent when submitting a POST request with a query string. 
+        This is a weird case because <a href="https://www.w3.org/TR/html4/interact/forms.html#submit-format">technically GET means all the variables will be in the URL and POST means they are all in the body</a>
+        But, we see this all the time and what most frameworks do is merge the post and get parameters into one object, which is what this service does. So you will see both together. If you wish
+        to view the post body seperately from the get parameters you may configure the toilet to dump the post body first. In which case the stream will be consumed and only the get
+        parameters will be parsed.
+      </p>
+      <p>
+        <h3>First update: Anti-Spam</h3>
+        [7/13/2018] Because of people <a href="https://imgur.com/a/Ac1KJYC">like this</a> I have had to add logic to disable toilets that receive too many requests per minute.<br/>
+        Feel free to reach out to me if you feel your toilet has been blocked in error because bugs are a thing.
+      </p>
+      <p>
+        <h3>This service is super beta.</h3>
+        [Early 2017] Expect bugs. Get my email from the contact page and tell me about my bugs.</h2>
+      </p>
+   
 
 <script type="text/javascript">
   function hasWhiteSpace(s) {

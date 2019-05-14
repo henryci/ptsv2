@@ -172,6 +172,16 @@ func toiletEditHandler(w http.ResponseWriter, r *http.Request) {
 		errors += "Status code must be a valid integer between 100 and 599"
 	}
 
+	// If a DumpBodyFirst key is present, and it its value is 'true' then
+	// enable it for the toilet (this breaks default behaviors!)
+	var dumpBodyFirst = false
+	if dumpVal, ispresent := r.Form["DumpBodyFirst"]; ispresent {
+		dumpBodyFirst, err = strconv.ParseBool(dumpVal[0])
+		if err != nil {
+			errors += "Dump Body First must be true or false"
+		}
+	}
+
 	if errors != "" {
 		fmt.Fprintln(w, "Unable to update toilet because of errors: ")
 		fmt.Fprintln(w, errors)
@@ -184,6 +194,7 @@ func toiletEditHandler(w http.ResponseWriter, r *http.Request) {
 	toilet.ResponseDelay = int(responseDelay)
 	toilet.ResponseCode = int(responseCode)
 	toilet.ResponseBody = r.Form["ResponseBody"][0]
+	toilet.DumpBodyFirst = dumpBodyFirst
 
 	// Store this toilet
 	if _, err := updateToilet(context, toilet); err != nil {
@@ -266,6 +277,18 @@ func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// If the toilet is configured to grab the body before parsing values, do so.
+	// This kills application/x-url-form-urlencoded but might give somebody useful debug info
+	// This probably breaks other things too (multi-part?)
+	if toilet.DumpBodyFirst {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			errorHandler(w, r, http.StatusInternalServerError, "Couldn't read request body.", err)
+			return
+		}
+		dump.Body = string(body)
+	}
+
 	// Grab the Post (or Get) parameters
 	if err = r.ParseForm(); err != nil {
 		errorHandler(w, r, http.StatusBadRequest, "Unable to parse form values", err)
@@ -319,13 +342,15 @@ func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get the body
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		errorHandler(w, r, http.StatusInternalServerError, "Couldn't read request body.", err)
-		return
+	// Get the body at the normal time b/c DumpBodyFirst isn't set
+	if !toilet.DumpBodyFirst {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			errorHandler(w, r, http.StatusInternalServerError, "Couldn't read request body.", err)
+			return
+		}
+		dump.Body = string(body)
 	}
-	dump.Body = string(body)
 
 	// Make sure there is room in this toilet.
 	if deleteExtraDumps(context, toilet) != nil {

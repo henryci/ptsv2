@@ -6,11 +6,14 @@ if something doesn't make sense to you, doesn't work as it says it should, or is
 <h2>Headers</h2>
 The header is just a dump of the headers in the request with the one note that 
 headers inserted by the host (Google Appengine) have been removed to avoid confusing people
-<h2>Post Parameters</h2>
-Parses the traditional web form request data if it's there. This should always be blank if the request type is not: 
-applicatin/x-www-form-urlencoded data. This is also where GET query parameters (?foo=bar in the URL) will appear.
+<h2>Parameters</h2>
+Parses the passed parameters. This uses the same logic as most web frameworks. So it will contain any GET params (query string 
+parameters such as ?foo=bar) and if the post request is an application/x-www-form-urlencoded request then it will contain the post 
+params. If both are present they will get munged into one grouping. If the toilet is configured to dump the post body before parsing then
+The post parameters will only appear in the post body and not here.
 <h2>Post Body</h2>
-The post body as a string.
+The post body as a string. If the form is of type application/x-www-form-urlencoded then the post body will be consumed by the parameters
+parser and will not appear here (unless the toilet is configured to dump post body first).
 <h2>Multipart Files</h2>
 If the post is of content type multipart/* then this is where any files will go. For a file to be valid it must have a filename.
 Note that the content will display encoded when viewing a dump as JSON.

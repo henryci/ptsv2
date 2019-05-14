@@ -10,55 +10,67 @@
         <strong>Post URL:</strong> <a href="/t/{{.Toilet.ID}}/post">/t/{{.Toilet.ID}}/post</a><br/>
         <strong>Config</strong> <a href="#" id="ToggleConfig">show</a>
 
-        <p>                       
-            <div id="ConfigDetails" style="display:none;margin-left:10px">
-                <span style="color:red">All values are transmitted and stored in plaintext!<br/>Do not submit anything you wouldn't want emailed to your worst enemy.</span>
-                <form method="POST" action="/t/{{.Toilet.ID}}/edit" id="toilet_edit_form">
-                <table class="table table-borderless">
-                    <tr>
-                        <td>HTTP Auth</td>
-                        <td>
-                            <table>
-                                <tr>
-                                    <td>Http Username:</td>
-                                    <td><input type="text" name="AuthUsername" value="{{.Toilet.AuthUsername}}"/></td>
-                                </tr>
-                                <tr>
-                                    <td>Http Password:</td>
-                                    <td><input type="text" name="AuthPassword" value="{{.Toilet.AuthPassword}}"/></td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Server Response</td>
-                        <td> 
-                            <table>
-                                <tr>
-                                    <td>Status Code:</td>
-                                    <td><input type="text" name="ResponseCode" size="3" value="{{.Toilet.ResponseCode}}"/></td>
-                                </tr>
-                                <tr>
-                                    <td>Body:</td>
-                                    <td><textarea name="ResponseBody" rows="10" cols="50" form="toilet_edit_form">{{.Toilet.ResponseBody}}</textarea></td>
-                                </tr>
-                                <tr>
-                                    <td>Delay:</td>
-                                    <td><input type="text" name="ResponseDelay" size="1" value="{{.Toilet.ResponseDelay}}"></td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>     
-                <input type="submit" value="Update Toilet Config">       
-                </form>
-            </div>
-        </p>
+        <div id="ConfigDetails" class="indented mt-3" style="display:none">
 
+            <div class="row">
+                <div class="col-xs-10">
+                    <span style="color:red">All values are transmitted and stored in plaintext!<br/>Do not submit anything you wouldn't want emailed to your worst enemy.</span>
+                </div>
+            </div>
+            <form method="POST" action="/t/{{.Toilet.ID}}/edit" id="toilet_edit_form">
+            
+                <div class="row mt-3">
+                    <div class="col-xs-5">HTTP AUTH</div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-1"></div>
+                    <div class="col-xs-3">Username:</div>
+                    <div class="col-xs-3"><input type="text" name="AuthUsername" value="{{.Toilet.AuthUsername}}"/></div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-1"></div>
+                    <div class="col-xs-3">Password:</div>
+                    <div class="col-xs-3"><input type="text" name="AuthPassword" value="{{.Toilet.AuthPassword}}"/></div>
+                </div>
+            
+                <div class="row mt-3">
+                    <div class="col-xs-5">Server Response</div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-1"></div>
+                    <div class="col-xs-3">Status Code:</div>
+                    <div class="col-xs-3"><input type="text" name="ResponseCode" size="3" value="{{.Toilet.ResponseCode}}"/></div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-1"></div>
+                    <div class="col-xs-3">Body:</div>
+                    <div class="col-xs-3"><textarea name="ResponseBody" rows="10" cols="50" form="toilet_edit_form">{{.Toilet.ResponseBody}}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-1"></div>
+                    <div class="col-xs-3">Delay:</div>
+                    <div class="col-xs-3"><input type="text" name="ResponseDelay" size="1" value="{{.Toilet.ResponseDelay}}"></div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-xs-5">Weird Configs</div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-1"></div>
+                    <div class="col-xs-3">Dump Body First:</div>
+                    <div class="col-xs-3"><input type="checkbox" name="DumpBodyFirst" value="true" {{ if .Toilet.DumpBodyFirst}}checked{{ end }}/></div>
+                </div>
+
+                <div class="row mt-3 mb-3">
+                    <div class="col-xs-2"><input type="submit" value="Update Toilet Config"></div>
+                </div>
+
+            </form>
+        </div>
 
         <p>
             <h3>Dumps</h3>
-            {{ if .Dumps }}            
+            {{ if .Dumps }}
             <table class="table table-condensed table-borderless table-hover">
                 <thead>
                     <tr>

@@ -18,6 +18,10 @@ type Toilet struct {
 	AuthUsername  string    // A username for toilets with HTTP Auth
 	AuthPassword  string    // A password for toilets with HTTP Auth
 	LastDelete    time.Time // The last time dumps were deleted from this toilet
+
+	// If true, the post body will be dumped before the params
+	// this breaks url encoded forms but allows people to see the raw version of their forms
+	DumpBodyFirst bool
 }
 
 // retrieves a toilet from the data store
@@ -171,7 +175,6 @@ func updateToilet(context context.Context, toilet *Toilet) (string, error) {
 	}
 
 	return toilet.ID, nil
-	//return toiletID, nil
 }
 
 // Creates a new toilet
@@ -200,6 +203,7 @@ func createToilet(context context.Context, toiletID string) (*Toilet, error) {
 	toilet.ID = toiletID
 	toilet.ResponseCode = 200
 	toilet.ResponseBody = "Thank you for this dump. I hope you have a lovely day!"
+	toilet.DumpBodyFirst = false
 
 	// Store this toilet
 	if _, err := storeToilet(context, toilet, toiletID); err != nil {

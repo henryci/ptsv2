@@ -370,6 +370,9 @@ func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Duration(toilet.ResponseDelay*1000) * time.Millisecond)
 	}
 
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	// Set the Appropriate HTTP Response Code
 	w.WriteHeader(toilet.ResponseCode)
 

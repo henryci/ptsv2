@@ -1,11 +1,11 @@
-package ptsv2
+package main
 
 import (
+	"context"
 	"errors"
 	"time"
 
-	"golang.org/x/net/context"
-	"google.golang.org/appengine/datastore"
+	"cloud.google.com/go/datastore"
 )
 
 // Toilet is the container that stores all dumps.
@@ -25,10 +25,10 @@ type Toilet struct {
 }
 
 // retrieves a toilet from the data store
-func getToilet(context context.Context, toiletID string) (*Toilet, error) {
+func getToilet(context context.Context, client *datastore.Client, toiletID string) (*Toilet, error) {
 	var toilet Toilet
-	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
-	err := datastore.Get(context, toiletKey, &toilet)
+	toiletKey := datastore.NameKey("Toilet", toiletID, nil)
+	err := client.Get(context, toiletKey, &toilet)
 	if err != nil {
 		if err == datastore.ErrNoSuchEntity {
 			logMessage(context, "Unable to find toilet: "+toiletID)
@@ -43,13 +43,13 @@ func getToilet(context context.Context, toiletID string) (*Toilet, error) {
 }
 
 // Finds all dumps for a given toilet
-func getToiletDumps(context context.Context, toiletID string) ([]Dump, error) {
+func getToiletDumps(context context.Context, client *datastore.Client, toiletID string) ([]Dump, error) {
 	var dumps []Dump
-	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
+	toiletKey := datastore.NameKey("Toilet", toiletID, nil)
 	q := datastore.NewQuery("Dump").Ancestor(toiletKey).Order("Timestamp")
 
 	// Get the dumps
-	if _, err := q.GetAll(context, &dumps); err != nil {
+	if _, err := client.GetAll(context, q, &dumps); err != nil {
 		logError(context, "Failed querying for dumps.", err)
 		return nil, err
 	}
@@ -58,11 +58,11 @@ func getToiletDumps(context context.Context, toiletID string) ([]Dump, error) {
 }
 
 // Gets the ID of the latest dump in a toilet
-func getLatestDumpFromToilet(context context.Context, toiletID string) (int64, error) {
-	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
+func getLatestDumpFromToilet(context context.Context, client *datastore.Client, toiletID string) (int64, error) {
+	toiletKey := datastore.NameKey("Toilet", toiletID, nil)
 	q := datastore.NewQuery("Dump").Ancestor(toiletKey).Order("-Timestamp").KeysOnly().Limit(1)
 
-	keys, err := q.GetAll(context, nil)
+	keys, err := client.GetAll(context, q, nil)
 	if err != nil {
 		logError(context, "Failed getting latest dump.", err)
 		return -1, err
@@ -71,21 +71,21 @@ func getLatestDumpFromToilet(context context.Context, toiletID string) (int64, e
 		return -1, errors.New("this pristine toilet has no dumps")
 	}
 
-	return keys[0].IntID(), nil
+	return keys[0].ID, nil
 }
 
 // Deletes all dumps for a given toilet
-func flushAllDumps(context context.Context, toiletID string) error {
-	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
+func flushAllDumps(context context.Context, client *datastore.Client, toiletID string) error {
+	toiletKey := datastore.NameKey("Toilet", toiletID, nil)
 	toDelete := datastore.NewQuery("Dump").Ancestor(toiletKey).KeysOnly()
 
-	keys, err := toDelete.GetAll(context, nil)
+	keys, err := client.GetAll(context, toDelete, nil)
 	if err != nil {
 		logError(context, "FlushAllDumps: Error retrieving keys to delete.", err)
 		return err
 	}
 
-	err = datastore.DeleteMulti(context, keys)
+	err = client.DeleteMulti(context, keys)
 	if err != nil {
 		logError(context, "FlushAllDumps: Unable to delete items", err)
 		return err
@@ -95,11 +95,11 @@ func flushAllDumps(context context.Context, toiletID string) error {
 }
 
 // Gets all Disabled Toilets
-func getDisabledToilets(context context.Context) ([]Toilet, error) {
+func getDisabledToilets(context context.Context, client *datastore.Client) ([]Toilet, error) {
 	var toilets []Toilet
 
 	q := datastore.NewQuery("Toilet").Filter("ResponseCode =", -1)
-	if _, err := q.GetAll(context, &toilets); err != nil {
+	if _, err := client.GetAll(context, q, &toilets); err != nil {
 		logError(context, "Failed getting blocked toilets", err)
 		return nil, err
 	}
@@ -108,10 +108,10 @@ func getDisabledToilets(context context.Context) ([]Toilet, error) {
 }
 
 // Toilets mustn't have more than MaxDumpsIntoilet. So do a check and delete any if we are over
-func deleteExtraDumps(context context.Context, toilet *Toilet) error {
+func deleteExtraDumps(context context.Context, client *datastore.Client, toilet *Toilet) error {
 
-	toiletKey := datastore.NewKey(context, "Toilet", toilet.ID, 0, nil)
-	count, err := datastore.NewQuery("Dump").Ancestor(toiletKey).Count(context)
+	toiletKey := datastore.NameKey("Toilet", toilet.ID, nil)
+	count, err := client.Count(context, datastore.NewQuery("Dump").Ancestor(toiletKey))
 	if err != nil {
 		logError(context, "Error getting count of dumps for this toilet.", err)
 		return err
@@ -123,7 +123,7 @@ func deleteExtraDumps(context context.Context, toilet *Toilet) error {
 		// and it must get shut off
 		if time.Since(toilet.LastDelete).Seconds() < MinSecondsBetweenDeletes {
 			toilet.ResponseCode = -1
-			if _, err := updateToilet(context, toilet); err != nil {
+			if _, err := updateToilet(context, client, toilet); err != nil {
 				logError(context, "Error storing dump", err)
 				return err
 			}
@@ -132,12 +132,12 @@ func deleteExtraDumps(context context.Context, toilet *Toilet) error {
 
 		// If there are more dumps in the toilet than the current limit, clear some space
 		toDelete := datastore.NewQuery("Dump").Ancestor(toiletKey).Order("-Timestamp").Limit(NumDumpsToDelete).KeysOnly()
-		keys, err := toDelete.GetAll(context, nil)
+		keys, err := client.GetAll(context,toDelete, nil)
 		if err != nil {
 			logError(context, "Error retrieving keys to delete.", err)
 			return err
 		}
-		err = datastore.DeleteMulti(context, keys)
+		err = client.DeleteMulti(context, keys)
 		if err != nil {
 			logError(context, "Unable to delete items", err)
 			return err
@@ -145,7 +145,7 @@ func deleteExtraDumps(context context.Context, toilet *Toilet) error {
 
 		// Make note of when we cleared space.
 		toilet.LastDelete = time.Now()
-		if _, err := updateToilet(context, toilet); err != nil {
+		if _, err := updateToilet(context, client, toilet); err != nil {
 			logError(context, "Error storing dump", err)
 			return err
 		}
@@ -155,9 +155,9 @@ func deleteExtraDumps(context context.Context, toilet *Toilet) error {
 }
 
 // Stores a toilet
-func storeToilet(context context.Context, toilet *Toilet, toiletID string) (string, error) {
-	key := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
-	if _, err := datastore.Put(context, key, toilet); err != nil {
+func storeToilet(context context.Context, client *datastore.Client, toilet *Toilet, toiletID string) (string, error) {
+	key := datastore.NameKey("Toilet", toiletID, nil)
+	if _, err := client.Put(context, key, toilet); err != nil {
 		logError(context, "Unable to store toilet", err)
 		return "", err
 	}
@@ -167,9 +167,9 @@ func storeToilet(context context.Context, toilet *Toilet, toiletID string) (stri
 
 // Updates a toilet
 //func updateToilet(context context.Context, toilet *Toilet, toiletID string) (string, error) {
-func updateToilet(context context.Context, toilet *Toilet) (string, error) {
-	toiletKey := datastore.NewKey(context, "Toilet", toilet.ID, 0, nil)
-	if _, err := datastore.Put(context, toiletKey, toilet); err != nil {
+func updateToilet(context context.Context, client *datastore.Client, toilet *Toilet) (string, error) {
+	toiletKey := datastore.NameKey("Toilet", toilet.ID, nil)
+	if _, err := client.Put(context, toiletKey, toilet); err != nil {
 		logError(context, "Unable to store toilet", err)
 		return "", err
 	}
@@ -178,7 +178,7 @@ func updateToilet(context context.Context, toilet *Toilet) (string, error) {
 }
 
 // Creates a new toilet
-func createToilet(context context.Context, toiletID string) (*Toilet, error) {
+func createToilet(context context.Context, client *datastore.Client, toiletID string) (*Toilet, error) {
 	if toiletID == "" {
 		return nil, errors.New("Can't create a toilet if name is empty")
 	}
@@ -188,7 +188,7 @@ func createToilet(context context.Context, toiletID string) (*Toilet, error) {
 	}
 
 	// This redundant lookup is neccessary to keep from squishing an existing toilet
-	toilet, err := getToilet(context, toiletID)
+	toilet, err := getToilet(context,client, toiletID)
 	if err != nil {
 		logError(context, "Errr on duplicate check for toilet: "+toiletID, err)
 		return nil, err
@@ -206,7 +206,7 @@ func createToilet(context context.Context, toiletID string) (*Toilet, error) {
 	toilet.DumpBodyFirst = false
 
 	// Store this toilet
-	if _, err := storeToilet(context, toilet, toiletID); err != nil {
+	if _, err := storeToilet(context, client, toilet, toiletID); err != nil {
 		logError(context, "Failed creating new toilet", err)
 		return nil, err
 	}

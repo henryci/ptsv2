@@ -1,7 +1,8 @@
-package ptsv2
+package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -10,12 +11,13 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
-	"google.golang.org/appengine"
+	"cloud.google.com/go/datastore"
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{"hasField": hasField}).ParseFiles(
@@ -31,7 +33,20 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{"hasField"
 	"templates/static/dumpfields.html",
 	"templates/static/contact.html"))
 
-func init() {
+var datastoreClient *datastore.Client
+
+func prepare() {
+
+	ctx := context.Background()
+
+    projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
+
+    var err error
+    datastoreClient, err = datastore.NewClient(ctx, projectID)
+    if err != nil {
+          logFatal(ctx, "Could not create datastore client.", err)
+    }
+
 	router := mux.NewRouter()
 	router.HandleFunc("/", rootHandler)
 	router.HandleFunc("/s/{page}", staticHandler)
@@ -64,8 +79,8 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
 
 // Admin and overview
 func adminHandler(w http.ResponseWriter, r *http.Request) {
-	context := appengine.NewContext(r)
-	toilets, err := getDisabledToilets(context)
+	context := r.Context()
+	toilets, err := getDisabledToilets(context, datastoreClient)
 
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed getting clogged toilets", err)
@@ -86,9 +101,9 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 func toiletHandler(w http.ResponseWriter, r *http.Request) {
 
 	urlVars := mux.Vars(r)
-	context := appengine.NewContext(r)
+	context := r.Context()
 
-	toilet, err := getToilet(context, urlVars["toiletID"])
+	toilet, err := getToilet(context, datastoreClient, urlVars["toiletID"])
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed getting toilet: "+urlVars["toiletID"], err)
 		return
@@ -96,7 +111,7 @@ func toiletHandler(w http.ResponseWriter, r *http.Request) {
 
 	// If no toilet is found create one.
 	if toilet == nil {
-		toilet, err = createToilet(context, urlVars["toiletID"])
+		toilet, err = createToilet(context, datastoreClient, urlVars["toiletID"])
 		if err != nil {
 			errorHandler(w, r, http.StatusInternalServerError, "Failed creating toilet: "+urlVars["toiletID"], err)
 			return
@@ -109,7 +124,7 @@ func toiletHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// At this point, a toilet exists. Get it's dumps
-	dumps, err := getToiletDumps(context, urlVars["toiletID"])
+	dumps, err := getToiletDumps(context, datastoreClient, urlVars["toiletID"])
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Unable to get dumps for toilet: "+urlVars["toiletID"], err)
 		return
@@ -133,9 +148,9 @@ func toiletHandler(w http.ResponseWriter, r *http.Request) {
 func toiletFlushAllHandler(w http.ResponseWriter, r *http.Request) {
 	urlVars := mux.Vars(r)
 	toiletID := urlVars["toiletID"]
-	context := appengine.NewContext(r)
+	context := r.Context()
 
-	if err := flushAllDumps(context, toiletID); err != nil {
+	if err := flushAllDumps(context, datastoreClient, toiletID); err != nil {
 		errorHandler(w, r, http.StatusBadRequest, "Could not flush dumps for toilet: '"+toiletID+"'", nil)
 		return
 	}
@@ -147,9 +162,9 @@ func toiletFlushAllHandler(w http.ResponseWriter, r *http.Request) {
 func toiletEditHandler(w http.ResponseWriter, r *http.Request) {
 	urlVars := mux.Vars(r)
 	toiletID := urlVars["toiletID"]
-	context := appengine.NewContext(r)
+	context := r.Context()
 
-	toilet, err := getToilet(context, toiletID)
+	toilet, err := getToilet(context, datastoreClient, toiletID)
 	if err != nil || toilet == nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed getting toilet for edit: "+urlVars["toiletID"], err)
 		return
@@ -197,7 +212,7 @@ func toiletEditHandler(w http.ResponseWriter, r *http.Request) {
 	toilet.DumpBodyFirst = dumpBodyFirst
 
 	// Store this toilet
-	if _, err := updateToilet(context, toilet); err != nil {
+	if _, err := updateToilet(context, datastoreClient, toilet); err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed updating toilet", err)
 		return
 	}
@@ -211,7 +226,7 @@ func errorHandler(w http.ResponseWriter, r *http.Request, status int, msg string
 	w.WriteHeader(status)
 
 	if err != nil {
-		logError(appengine.NewContext(r), msg, err)
+		logError(r.Context(), msg, err)
 	}
 
 	fmt.Fprintln(w, msg)
@@ -226,10 +241,10 @@ func errorHandler(w http.ResponseWriter, r *http.Request, status int, msg string
 func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the URL
 	urlVars := mux.Vars(r)
-	context := appengine.NewContext(r)
+	context := r.Context()
 
 	// Find the toilet, if it doesn't exist return a 404
-	toilet, err := getToilet(context, urlVars["toiletID"])
+	toilet, err := getToilet(context, datastoreClient, urlVars["toiletID"])
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed getting toilet: "+urlVars["toiletID"], err)
 		return
@@ -353,13 +368,13 @@ func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Make sure there is room in this toilet.
-	if deleteExtraDumps(context, toilet) != nil {
+	if deleteExtraDumps(context, datastoreClient, toilet) != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed checking toilet size", err)
 		return
 	}
 
 	// Store the dump
-	dumpID, err := storeDump(context, dump, toilet)
+	dumpID, err := storeDump(context, datastoreClient, dump, toilet)
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed storing dump", err)
 		return
@@ -393,7 +408,7 @@ func postdumpHandler(w http.ResponseWriter, r *http.Request) {
 func deletedumpHandler(w http.ResponseWriter, r *http.Request) {
 	urlVars := mux.Vars(r)
 	toiletID := urlVars["toiletID"]
-	context := appengine.NewContext(r)
+	context := r.Context()
 
 	// Dump IDs are int64s
 	dumpID, err := strconv.ParseInt(urlVars["dumpID"], 10, 64)
@@ -403,7 +418,7 @@ func deletedumpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// This will succeed even if the dump doesn't exist to delete
-	err = deleteDump(context, dumpID, toiletID)
+	err = deleteDump(context, datastoreClient, dumpID, toiletID)
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed flushing Dump.", err)
 		return
@@ -431,13 +446,13 @@ func viewdumpHandlerTEXT(w http.ResponseWriter, r *http.Request) {
 func viewdumpHandler(w http.ResponseWriter, r *http.Request, outputMethod string) {
 	urlVars := mux.Vars(r)
 	toiletID := urlVars["toiletID"]
-	context := appengine.NewContext(r)
+	context := r.Context()
 	var dumpID int64 // Dump IDs are int64s
 	var err error
 
 	// "latest" is a unique Dump ID that always gets the latest dump (Feature request from Jeff Rak)
 	if urlVars["dumpID"] == "latest" {
-		dumpID, err = getLatestDumpFromToilet(context, toiletID)
+		dumpID, err = getLatestDumpFromToilet(context, datastoreClient, toiletID)
 		if err != nil {
 			errorHandler(w, r, http.StatusBadRequest, "Could not get latest dump", err)
 			return
@@ -450,7 +465,7 @@ func viewdumpHandler(w http.ResponseWriter, r *http.Request, outputMethod string
 		}
 	}
 
-	dump, err := getDump(context, dumpID, toiletID)
+	dump, err := getDump(context, datastoreClient, dumpID, toiletID)
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "Failed getting Dump.", err)
 		return

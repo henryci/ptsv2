@@ -1,4 +1,4 @@
-package ptsv2
+package main
 
 /*****************
  * GLOBAL CONFIG *

@@ -1,13 +1,13 @@
-package ptsv2
+package main
 
 import (
 	"crypto/sha1"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"time"
 
-	"golang.org/x/net/context"
-	"google.golang.org/appengine/datastore"
+	"cloud.google.com/go/datastore"
 )
 
 // UploadedFile stores metadata and the content of an uploaded file
@@ -134,36 +134,38 @@ func (d *Dump) Load(ps []datastore.Property) error {
 }
 
 // Makes this dump a child of a toilet and stores it returning the ID of the dump
-func storeDump(context context.Context, dump *Dump, toilet *Toilet) (int64, error) {
-	toiletKey := datastore.NewKey(context, "Toilet", toilet.ID, 0, nil)
+func storeDump(context context.Context, client *datastore.Client, dump *Dump, toilet *Toilet) (int64, error) {
+	// toiletKey := datastore.NewKey(context, "Toilet", toilet.ID, 0, nil)
+	toiletKey := datastore.NameKey("Toilet", toilet.ID, nil)
 
 	// We can't rely on Datastore to generate an ID at insert time because we need
 	// the ID as part of the Dump
-	low, _, err := datastore.AllocateIDs(context, "Dump", toiletKey, 1)
+	var keys []*datastore.Key
+	keys = append(keys, datastore.IncompleteKey("Dump", toiletKey))
+	generatedKeys, err := client.AllocateIDs(context, keys)
 	if err != nil {
 		logError(context, "Unable to allocate new ID for dump", err)
 		return 0, err
 	}
 
 	// Store the dump
-	dump.ID = low
-	dumpKey := datastore.NewKey(context, "Dump", "", dump.ID, toiletKey)
-	key, err := datastore.Put(context, dumpKey, dump)
+	dump.ID = generatedKeys[0].ID
+	key, err := client.Put(context, generatedKeys[0], dump)
 	if err != nil {
 		logError(context, "Unable to store dump", err)
 		return 0, err
 	}
 
-	return key.IntID(), nil
+	return key.ID, nil
 }
 
 // retrieves a dump from the data store
-func getDump(context context.Context, dumpID int64, toiletID string) (*Dump, error) {
+func getDump(context context.Context, client *datastore.Client, dumpID int64, toiletID string) (*Dump, error) {
 	var dump Dump
 
-	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
-	dumpKey := datastore.NewKey(context, "Dump", "", dumpID, toiletKey)
-	err := datastore.Get(context, dumpKey, &dump)
+	toiletKey := datastore.NameKey("Toilet", toiletID, nil)
+	dumpKey := datastore.IDKey("Dump", dumpID, toiletKey)
+	err := client.Get(context, dumpKey, &dump)
 	if err != nil {
 		if err == datastore.ErrNoSuchEntity {
 			logMessage(context, "Unable to find dump")
@@ -179,9 +181,9 @@ func getDump(context context.Context, dumpID int64, toiletID string) (*Dump, err
 
 // Deletes a specific dump
 // Does not return an error if the dump does not exist
-func deleteDump(context context.Context, dumpID int64, toiletID string) error {
-	toiletKey := datastore.NewKey(context, "Toilet", toiletID, 0, nil)
-	dumpKey := datastore.NewKey(context, "Dump", "", dumpID, toiletKey)
-
-	return datastore.Delete(context, dumpKey)
+func deleteDump(context context.Context, client *datastore.Client, dumpID int64, toiletID string) error {
+	toiletKey := datastore.NameKey("Toilet", toiletID, nil)
+	dumpKey := datastore.IDKey("Dump", dumpID, toiletKey)
+	
+	return client.Delete(context, dumpKey)
 }

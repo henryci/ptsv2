@@ -1,23 +1,26 @@
-package ptsv2
+package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"golang.org/x/net/context"
-	"google.golang.org/appengine/log"
 )
 
 func logMessage(context context.Context, msg string) {
-	log.Infof(context, "\x1b[31;1m"+msg+"\x1b[0m")
+	log.Printf("\x1b[31;1m"+msg+"\x1b[0m")
 }
 
 func logError(context context.Context, msg string, err error) {
-	log.Errorf(context, "\x1b[31;1m%q Error: %v\x1b[0m", msg, err)
+	log.Printf("\x1b[31;1m%q Error: %v\x1b[0m", msg, err)
+}
+
+func logFatal(context context.Context, msg string, err error) {
+	log.Fatalf("\x1b[31;1m%q Error: %v\x1b[0m", msg, err)
 }
 
 // Makes sure an ID is alphanumeric + underscore and (now) dash
